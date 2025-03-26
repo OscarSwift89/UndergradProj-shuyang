@@ -34,9 +34,25 @@ class Board:
                     moves.append((nx, ny))
         return moves
 
+    def get_jump_moves(self, pos):
+        """获取所有跳跃移动（检查八个方向）"""
+        x, y = pos
+        jumps = []
+        directions = [(-1, -1), (-1, 0), (-1, 1),
+                      (0, -1),           (0, 1),
+                      (1, -1),  (1, 0),  (1, 1)]  #上下左右等八个方向
+        for dx, dy in directions:
+            midx, midy = x + dx, y + dy
+            landingx, landingy = x + 2 * dx , y + 2 * dy
+            if 0 <= midx < 17 and 0 <= midy < 17 and self.board[midx, midy]:
+                if 0 <= landingx < 17 and 0 <= landingy < 17 and self.board[landingx, landingy]:
+                    jumps.append((landingx, landingy))
+        return jumps
+
+
     def is_game_over(self):
         """简单胜利条件：任意玩家棋子到达对角区域"""
-        # 检查玩家1是否到达右下区域
+        # 检查玩家1是否到达右下区域 
         if np.any(self.board[-4:, -4:] == 1):
             return True
         # 检查玩家2是否到达左上区域
