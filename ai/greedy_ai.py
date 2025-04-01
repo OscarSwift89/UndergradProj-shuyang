@@ -6,21 +6,26 @@ class GreedyAI:
         self.player_id = player_id
         
     def choose_move(self, board):
-        """贪心算法：选择最接近目标区域的移动，
-        同时考虑基础移动和跳跃移动。
-        如果有多个得分相同的选择，则由于顺序随机化，可以有一定的多样性。"""
+        """
+        贪心算法：选择使棋子距离目标区域曼哈顿距离最小的移动，
+        对于已进入目标区域的棋子，只考虑留在目标区域内的移动。
+        """
         best_score = float('inf')
         best_move = None
         
-        # 获取所有己方棋子位置并随机打乱顺序
+        # 随机打乱己方所有棋子的位置顺序，防止总是移动同一个棋子
         positions = list(np.argwhere(board == self.player_id))
         random.shuffle(positions)
         
         for pos in positions:
             pos = tuple(pos)
-            # 同时获取基础移动和跳跃移动
-            valid_moves = self.get_valid_moves(pos, board)
-            jump_moves = self.get_jump_moves(pos, board)
+            # 如果该棋子已在目标区域，只考虑移动后仍在目标区域内的情况
+            if self.in_target_area(pos):
+                valid_moves = [m for m in self.get_valid_moves(pos, board) if self.in_target_area(m)]
+                jump_moves = [m for m in self.get_jump_moves(pos, board) if self.in_target_area(m)]
+            else:
+                valid_moves = self.get_valid_moves(pos, board)
+                jump_moves = self.get_jump_moves(pos, board)
             all_moves = valid_moves + jump_moves
             for move in all_moves:
                 score = self.calculate_score(move)
@@ -28,17 +33,26 @@ class GreedyAI:
                     best_score = score
                     best_move = (pos, move)
         return best_move if best_move else None
-    
-    def calculate_score(self, position):
-        """曼哈顿距离作为评估函数，目标区域为对角区域"""
+
+    def in_target_area(self, pos):
+        """判断指定位置是否在目标区域内"""
         if self.player_id == 1:
-            target = (16, 16)  # 玩家1目标：右下角
+            # 玩家1的目标区域：右下角 4x4（索引 13-16）
+            return pos[0] >= 13 and pos[1] >= 13
         else:
-            target = (0, 0)    # 玩家2目标：左上角
+            # 玩家2的目标区域：左上角 4x4（索引 0-3）
+            return pos[0] < 4 and pos[1] < 4
+
+    def calculate_score(self, position):
+        """使用曼哈顿距离作为评估函数，距离目标越近分数越低"""
+        if self.player_id == 1:
+            target = (16, 16)
+        else:
+            target = (0, 0)
         return abs(position[0] - target[0]) + abs(position[1] - target[1])
     
     def get_valid_moves(self, pos, board):
-        """返回基础移动（上下左右）"""
+        """返回基础移动（上下左右）的合法位置"""
         x, y = pos
         moves = []
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
@@ -49,7 +63,7 @@ class GreedyAI:
         return moves
     
     def get_jump_moves(self, pos, board):
-        """返回跳跃移动：检查八个方向，如果相邻有棋子且跳后的位置为空"""
+        """返回跳跃移动：检查八个方向，如果相邻有棋子且跳后的落脚点为空"""
         x, y = pos
         jumps = []
         directions = [(-1, -1), (-1, 0), (-1, 1),

@@ -51,14 +51,15 @@ class Board:
 
 
     def is_game_over(self):
-        """简单胜利条件：任意玩家棋子到达对角区域"""
-        # 检查玩家1是否到达右下区域 
-        if np.any(self.board[-4:, -4:] == 1):
+        """胜利条件：当玩家1的所有棋子均移动到右下区域，
+           或玩家2的所有棋子均移动到左上区域时，游戏结束。"""
+        # 假设每个玩家初始有16个棋子（4x4区域）
+        if np.count_nonzero(self.board[-4:, -4:] == 1) == 16:
             return True
-        # 检查玩家2是否到达左上区域
-        if np.any(self.board[0:4, 0:4] == 2):
+        if np.count_nonzero(self.board[0:4, 0:4] == 2) == 16:
             return True
         return False
+
 
     def render(self):
         """彩色渲染棋盘"""

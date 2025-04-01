@@ -66,7 +66,7 @@ def start_game(p1_type, p2_type, root, selection_frame):
 
 # 主窗口及 AI 选择界面
 root = tk.Tk()
-root.title("中国跳棋AI对战")
+root.title("Chinese Checker Game")
 selection_frame = tk.Frame(root)
 selection_frame.pack(padx=10, pady=10)
 
