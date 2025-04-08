@@ -1,11 +1,13 @@
 import tkinter as tk
 from tkinter import ttk
 from game import Game
+
+#导入ai代理模块
 from ai.greedy_ai import GreedyAI
 from ai.astar_ai import AStarAI
 from ai.mcts_ai import MCTSAI
 from ai.minimax_ai import MinimaxAI
-from ai.bfs_ai import BFSAI
+#from ai.bfs_ai import BFSAI
 
 # 定义一个简单的 GUI 游戏类，用画布显示棋盘
 class GameGUI:
