@@ -88,6 +88,21 @@ class GameGUI:
                     self.canvas.create_oval(x1+5, y1+5, x2-5, y2-5, fill="red")
                 elif board[i, j] == 2:
                     self.canvas.create_oval(x1+5, y1+5, x2-5, y2-5, fill="blue")
+        
+        # 在棋盘四个角添加边框（4x4 区域）
+        # 顶部左侧：行 0~3, 列 0~3
+        self.canvas.create_rectangle(0, 0, self.cell_size*4, self.cell_size*4,
+                                     outline="purple", width=3)
+        # 顶部右侧：行 0~3, 列 13~16
+        self.canvas.create_rectangle(self.cell_size*13, 0, self.cell_size*17, self.cell_size*4,
+                                     outline="orange", width=3)
+        # 底部左侧：行 13~16, 列 0~3
+        self.canvas.create_rectangle(0, self.cell_size*13, self.cell_size*4, self.cell_size*17,
+                                     outline="cyan", width=3)
+        # 底部右侧：行 13~16, 列 13~16
+        self.canvas.create_rectangle(self.cell_size*13, self.cell_size*13, self.cell_size*17, self.cell_size*17,
+                                     outline="magenta", width=3)
+
 
     def game_step(self):
         if not self.game.board.is_game_over():
