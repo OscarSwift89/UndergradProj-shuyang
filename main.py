@@ -1,47 +1,78 @@
 import tkinter as tk
 from tkinter import ttk
-from game import Game
-
 import time
+import tracemalloc
 import psutil
 import os
 
-#导入ai代理模块
+from game import Game
 from ai.greedy_ai import GreedyAI
 from ai.astar_ai import AStarAI
 from ai.mcts_ai import MCTSAI
 from ai.minimax_ai import MinimaxAI
 #from ai.bfs_ai import BFSAI
 
-# 定义一个简单的 GUI 游戏类，用画布显示棋盘
 class GameGUI:
     def __init__(self, root, p1_ai, p2_ai):
         self.root = root
-        # 主框架分为左右两部分：左侧棋盘，右侧信息面板
-        self.main_frame = tk.Frame(root)
-        self.main_frame.pack(fill=tk.BOTH, expand=True)
-
-        self.canvas = tk.Canvas(self.main_frame, width=600, height=600)
+        # 使用 grid 布局，左侧显示棋盘，右侧显示实时信息
+        self.canvas = tk.Canvas(root, width=600, height=600, bg="white")
         self.canvas.grid(row=0, column=0, padx=10, pady=10)
-
-        self.info_frame = tk.Frame(self.main_frame)
+        
+        # 信息面板
+        self.info_frame = tk.Frame(root)
         self.info_frame.grid(row=0, column=1, sticky="n", padx=10, pady=10)
-
-        self.info_label = tk.Label(self.info_frame, text="Algorithm Info", justify=tk.LEFT)
-        self.info_label.pack()
-
+        self.create_info_panel()
+        
         self.game = Game(p1_ai, p2_ai)
-        # 棋盘尺寸为15×17，单元格大小调整为600//17
         self.cell_size = 600 // 17
+        
+        # 用于记录决策统计信息，分别针对玩家1和玩家2
+        self.stats = {
+            1: {'decision_time': 0.0, 'cumulative_time': 0.0, 'decision_count': 0, 'latest_mem': 0},
+            2: {'decision_time': 0.0, 'cumulative_time': 0.0, 'decision_count': 0, 'latest_mem': 0}
+        }
+        self.start_time = time.perf_counter()
+        self.process = psutil.Process(os.getpid())
+        
         self.update_board()
-
         self.root.after(1000, self.game_step)
 
-    def update_info(self, ai_name, elapsed_time, memory_usage):
-        info_text = f"当前AI: {ai_name}\n"
-        info_text += f"上次计算时间: {elapsed_time:.4f} 秒\n"
-        info_text += f"当前内存使用: {memory_usage:.2f} MB"
-        self.info_label.config(text=info_text)
+    def create_info_panel(self):
+        # 创建两个子面板，分别显示红（玩家1）和蓝（玩家2）的信息
+        self.info_labels = {}  # 保存标签引用
+        for player in [1, 2]:
+            frame = tk.LabelFrame(self.info_frame, text=f"玩家 {player} 信息", padx=5, pady=5)
+            frame.pack(fill="x", pady=5)
+            self.info_labels[player] = {}
+            self.info_labels[player]['current_time'] = tk.Label(frame, text="当前决策耗时: -")
+            self.info_labels[player]['current_time'].pack(anchor="w")
+            self.info_labels[player]['cumulative_time'] = tk.Label(frame, text="累计决策耗时: -")
+            self.info_labels[player]['cumulative_time'].pack(anchor="w")
+            self.info_labels[player]['decision_count'] = tk.Label(frame, text="决策次数: -")
+            self.info_labels[player]['decision_count'].pack(anchor="w")
+            self.info_labels[player]['latest_mem'] = tk.Label(frame, text="最新决策内存: -")
+            self.info_labels[player]['latest_mem'].pack(anchor="w")
+        
+        # 总内存与游戏总运行时间统一显示在面板底部
+        self.total_mem_label = tk.Label(self.info_frame, text="总内存消耗: -")
+        self.total_mem_label.pack(anchor="w", pady=(10,0))
+        self.elapsed_label = tk.Label(self.info_frame, text="游戏运行时间: -")
+        self.elapsed_label.pack(anchor="w")
+
+    def update_info_panel(self, elapsed, total_mem):
+        # 更新信息面板内容
+        for player in [1, 2]:
+            cur = self.stats[player]
+            self.info_labels[player]['current_time'].config(text=f"当前决策耗时: {cur['decision_time']*1000:.1f} ms")
+            self.info_labels[player]['cumulative_time'].config(text=f"累计决策耗时: {cur['cumulative_time']:.2f} s")
+            self.info_labels[player]['decision_count'].config(text=f"决策次数: {cur['decision_count']}")
+            # 转换内存单位为 KB
+            self.info_labels[player]['latest_mem'].config(text=f"最新决策内存: {cur['latest_mem'] / 1024:.1f} KB")
+        
+        # 总内存单位转换为 MB
+        self.total_mem_label.config(text=f"总内存消耗: {total_mem / (1024*1024):.1f} MB")
+        self.elapsed_label.config(text=f"游戏运行时间: {elapsed:.1f} s")
 
     def update_board(self):
         self.canvas.delete("all")
@@ -60,26 +91,42 @@ class GameGUI:
 
     def game_step(self):
         if not self.game.board.is_game_over():
-            current_ai = self.game.players[self.game.current_player]
-            start_time = time.time()
+            current_player = self.game.current_player
+            current_ai = self.game.players[current_player]
+            
+            # 记录决策前状态，测量决策耗时与消耗内存
+            tracemalloc.start()
+            start = time.perf_counter()
             move = current_ai.choose_move(self.game.board.board)
-            elapsed = time.time() - start_time
-            # 获取当前进程内存使用（以 MB 为单位）
-            process = psutil.Process(os.getpid())
-            mem = process.memory_info().rss / (1024 * 1024)
-            ai_name = type(current_ai).__name__
-            self.update_info(ai_name, elapsed, mem)
+            decision_time = time.perf_counter() - start
+            current_mem, peak_mem = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+            
+            # 更新当前决策的统计数据
+            self.stats[current_player]['decision_time'] = decision_time
+            self.stats[current_player]['cumulative_time'] += decision_time
+            self.stats[current_player]['decision_count'] += 1
+            self.stats[current_player]['latest_mem'] = peak_mem  # 单位字节
+
+            # 获取当前总内存占用
+            total_mem = self.process.memory_info().rss  # 字节单位
+            elapsed = time.perf_counter() - self.start_time
 
             if move:
                 from_pos, to_pos = move
                 self.game.board.move_piece(from_pos, to_pos)
-            self.game.current_player = 2 if self.game.current_player == 1 else 1
+            
+            # 更新右侧信息面板
+            self.update_info_panel(elapsed, total_mem)
+            # 切换玩家
+            self.game.current_player = 2 if current_player == 1 else 1
             self.update_board()
             self.root.after(1000, self.game_step)
         else:
-            self.info_label.config(text="游戏结束！")
+            print("游戏结束！")
 
 def start_game(p1_type, p2_type, root, selection_frame):
+    # 根据选择创建对应 AI 对象
     def create_ai(ai_type, player_id):
         if ai_type == "Greedy":
             return GreedyAI(player_id)
@@ -95,14 +142,16 @@ def start_game(p1_type, p2_type, root, selection_frame):
             return GreedyAI(player_id)
     p1_ai = create_ai(p1_type, 1)
     p2_ai = create_ai(p2_type, 2)
-    selection_frame.destroy()
+    selection_frame.destroy()  # 移除选择界面
     GameGUI(root, p1_ai, p2_ai)
 
+# 主窗口及 AI 选择界面
 root = tk.Tk()
 root.title("中国跳棋AI对战")
 selection_frame = tk.Frame(root)
 selection_frame.pack(padx=10, pady=10)
-# 5个算法选项，包含新增的 A*、Minimax、BFS
+
+# 支持五种 AI 类型
 options = ["Greedy", "A* 算法", "MCTS", "Minimax", "BFS"]
 
 tk.Label(selection_frame, text="选择玩家1的AI:").grid(row=0, column=0, padx=5, pady=5)
