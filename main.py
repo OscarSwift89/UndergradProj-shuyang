@@ -1,11 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
-from colorama import init
 from game import Game
 from ai.greedy_ai import GreedyAI
-#from ai.astar_ai import AStarAI
+from ai.astar_ai import AStarAI
 from ai.mcts_ai import MCTSAI
-#from ai.minimax_ai import MinimaxAI 
+from ai.minimax_ai import MinimaxAI
+from ai.bfs_ai import BFSAI
 
 # 定义一个简单的 GUI 游戏类，用画布显示棋盘
 class GameGUI:
@@ -47,36 +47,42 @@ class GameGUI:
         else:
             print("游戏结束！")
 
-# 根据选择创建 AI 实例并开始游戏
 def start_game(p1_type, p2_type, root, selection_frame):
-    if p1_type == "Greedy":
-        p1_ai = GreedyAI(1)
-    elif p1_type == "MCTS":
-        p1_ai = MCTSAI(1)
-    else:
-        p1_ai = GreedyAI(1)
-    if p2_type == "Greedy":
-        p2_ai = GreedyAI(2)
-    elif p2_type == "MCTS":
-        p2_ai = MCTSAI(2)
-    else:
-        p2_ai = GreedyAI(2)
+    # 根据选择的 AI 类型创建对应的 AI 实例
+    def create_ai(ai_type, player_id):
+        if ai_type == "Greedy":
+            return GreedyAI(player_id)
+        elif ai_type == "A* 算法":
+            return AStarAI(player_id)
+        elif ai_type == "MCTS":
+            return MCTSAI(player_id)
+        elif ai_type == "Minimax":
+            return MinimaxAI(player_id)
+        elif ai_type == "BFS":
+            return BFSAI(player_id)
+        else:
+            return GreedyAI(player_id)
+    p1_ai = create_ai(p1_type, 1)
+    p2_ai = create_ai(p2_type, 2)
     selection_frame.destroy()  # 移除选择界面
     GameGUI(root, p1_ai, p2_ai)
 
 # 主窗口及 AI 选择界面
 root = tk.Tk()
-root.title("Chinese Checker Game")
+root.title("中国跳棋AI对战")
 selection_frame = tk.Frame(root)
 selection_frame.pack(padx=10, pady=10)
+
+# 五个 AI 选项
+options = ["Greedy", "A* 算法", "MCTS", "Minimax", "BFS"]
 
 tk.Label(selection_frame, text="选择玩家1的AI:").grid(row=0, column=0, padx=5, pady=5)
 tk.Label(selection_frame, text="选择玩家2的AI:").grid(row=1, column=0, padx=5, pady=5)
 p1_var = tk.StringVar(value="Greedy")
 p2_var = tk.StringVar(value="Greedy")
-p1_menu = ttk.Combobox(selection_frame, textvariable=p1_var, values=["Greedy", "MCTS"], state="readonly")
+p1_menu = ttk.Combobox(selection_frame, textvariable=p1_var, values=options, state="readonly")
 p1_menu.grid(row=0, column=1, padx=5, pady=5)
-p2_menu = ttk.Combobox(selection_frame, textvariable=p2_var, values=["Greedy", "MCTS"], state="readonly")
+p2_menu = ttk.Combobox(selection_frame, textvariable=p2_var, values=options, state="readonly")
 p2_menu.grid(row=1, column=1, padx=5, pady=5)
 
 start_button = tk.Button(selection_frame, text="开始游戏", 
@@ -84,66 +90,3 @@ start_button = tk.Button(selection_frame, text="开始游戏",
 start_button.grid(row=2, column=0, columnspan=2, pady=10)
 
 root.mainloop()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def select_ai(player_id):
-    print(f"\n选择玩家 {player_id} 的AI类型：")
-    print("1. 贪心算法")
-    print("2. A*算法")
-    print("3. 蒙特卡洛树搜索(MCTS)")
-    print("4. Minimax算法")  # 添加这一行
-    choice = input("请输入选项 (1/2/3/4): ")
-    
-    if choice == '1':
-        return GreedyAI(player_id)
-    elif choice == '2':
-        return AStarAI(player_id)
-    elif choice == '3':
-        return MCTSAI(player_id)
-    elif choice == '4':  # 添加这一行
-        return MinimaxAI(player_id)
-    else:
-        print("无效输入，默认使用贪心算法")
-        return GreedyAI(player_id)
-if __name__ == "__main__":
-    # 初始化colorama
-    init(autoreset=True)
-    
-    print("===== 中国跳棋AI对战 =====")
-    print("请选择第一个玩家的AI：")
-    p1_ai = select_ai(1)
-    print("\n请选择第二个玩家的AI：")
-    p2_ai = select_ai(2)
-    
-    game = Game(p1_ai, p2_ai)
-    game.run()
-
-
-
-
