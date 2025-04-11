@@ -1,5 +1,7 @@
+# ai/greedy_ai.py
 import numpy as np
 import random
+from .move_utils import get_valid_moves, get_jump_moves
 
 class GreedyAI:
     def __init__(self, player_id):
@@ -7,72 +9,58 @@ class GreedyAI:
         
     def choose_move(self, board):
         """
-        贪心算法：选择使棋子距离目标区域曼哈顿距离最小的移动，
-        对于已进入目标区域的棋子，只考虑留在目标区域内的移动。
+        遍历所有己方棋子（随机顺序），若棋子不在目标区域，
+        对其所有合法走法计算“改善值”：当前与移动后目标区域曼哈顿距离的差值。
+        优先选择改善值最大的移动；如果没有正改善的走法，则选择能使目标距离最低的走法。
         """
-        best_score = float('inf')
         best_move = None
-        
-        # 随机打乱己方所有棋子的位置顺序，防止总是移动同一个棋子
-        positions = list(np.argwhere(board == self.player_id))
+        best_improvement = 0  # 正改善要求 > 0
+        fallback_move = None
+        best_fallback = float('inf')  # 用于记录最低目标距离
+        positions = [tuple(pos) for pos in np.argwhere(board == self.player_id)]
         random.shuffle(positions)
         
         for pos in positions:
-            pos = tuple(pos)
-            # 如果该棋子已在目标区域，只考虑移动后仍在目标区域内的情况
+            # 若该棋子已经在目标区域，则跳过
             if self.in_target_area(pos):
-                valid_moves = [m for m in self.get_valid_moves(pos, board) if self.in_target_area(m)]
-                jump_moves = [m for m in self.get_jump_moves(pos, board) if self.in_target_area(m)]
-            else:
-                valid_moves = self.get_valid_moves(pos, board)
-                jump_moves = self.get_jump_moves(pos, board)
-            all_moves = valid_moves + jump_moves
-            for move in all_moves:
-                score = self.calculate_score(move)
-                if score < best_score:
-                    best_score = score
+                continue
+            # 计算当前棋子距离目标区域的曼哈顿距离
+            current_h = self.calculate_score(pos)
+            candidate_moves = get_valid_moves(pos, board) + get_jump_moves(pos, board)
+            for move in candidate_moves:
+                new_h = self.calculate_score(move)
+                improvement = current_h - new_h  # 希望这个值为正
+                if improvement > best_improvement:
+                    best_improvement = improvement
                     best_move = (pos, move)
-        return best_move if best_move else None
+                # 同时记录整体最低的新启发值（作为后备选择）
+                if new_h < best_fallback:
+                    best_fallback = new_h
+                    fallback_move = (pos, move)
+        
+        # 如果有正改善的移动，则返回该移动，否则返回整体最优的走法
+        return best_move if best_move else fallback_move
 
     def in_target_area(self, pos):
-        """判断指定位置是否在目标区域内"""
+        """
+        判断指定位置是否处于目标区域：
+          - 对于玩家1，目标区域：行号 ≥ 9 且列号 ≥ 9
+          - 对于玩家2，目标区域：行号 < 3 且列号 < 3
+        """
         if self.player_id == 1:
-            # 玩家1的目标区域：右下角 4x4（索引 13-16）
-            return pos[0] >= 13 and pos[1] >= 13
+            return pos[0] >= 9 and pos[1] >= 9
         else:
-            # 玩家2的目标区域：左上角 4x4（索引 0-3）
-            return pos[0] < 4 and pos[1] < 4
+            return pos[0] < 3 and pos[1] < 3
 
-    def calculate_score(self, position):
-        """使用曼哈顿距离作为评估函数，距离目标越近分数越低"""
+    def calculate_score(self, pos):
+        """
+        使用曼哈顿距离评估距离：
+         - 对于玩家1，目标取棋盘最右下角 (11, 11)
+         - 对于玩家2，目标取棋盘最左上角 (0, 0)
+        分数越低表示离目标区域越近。
+        """
         if self.player_id == 1:
-            target = (16, 16)
+            target = (11, 11)
         else:
             target = (0, 0)
-        return abs(position[0] - target[0]) + abs(position[1] - target[1])
-    
-    def get_valid_moves(self, pos, board):
-        """返回基础移动（上下左右）的合法位置"""
-        x, y = pos
-        moves = []
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        for dx, dy in directions:
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < 17 and 0 <= ny < 17 and board[nx, ny] == 0:
-                moves.append((nx, ny))
-        return moves
-    
-    def get_jump_moves(self, pos, board):
-        """返回跳跃移动：检查八个方向，如果相邻有棋子且跳后的落脚点为空"""
-        x, y = pos
-        jumps = []
-        directions = [(-1, -1), (-1, 0), (-1, 1),
-                      (0, -1),           (0, 1),
-                      (1, -1),  (1, 0),  (1, 1)]
-        for dx, dy in directions:
-            midx, midy = x + dx, y + dy
-            landingx, landingy = x + 2 * dx, y + 2 * dy
-            if 0 <= midx < 17 and 0 <= midy < 17 and board[midx, midy] != 0:
-                if 0 <= landingx < 17 and 0 <= landingy < 17 and board[landingx, landingy] == 0:
-                    jumps.append((landingx, landingy))
-        return jumps
+        return abs(pos[0] - target[0]) + abs(pos[1] - target[1])

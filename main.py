@@ -11,7 +11,6 @@ from ai.greedy_ai import GreedyAI
 from ai.astar_ai import AStarAI
 from ai.mcts_ai import MCTSAI
 from ai.minimax_ai import MinimaxAI
-#from ai.bfs_ai import BFSAI
 
 class GameGUI:
     def __init__(self, root, p1_ai, p2_ai, game_duration):
@@ -27,7 +26,7 @@ class GameGUI:
         self.create_info_panel()
         
         self.game = Game(p1_ai, p2_ai)
-        self.cell_size = 600 // 17
+        self.cell_size = 600 // 12
         
         # 记录各玩家决策耗时、累计耗时、决策次数、最新决策内存（字节）
         self.stats = {
@@ -77,27 +76,27 @@ class GameGUI:
         
         # 更新分数：玩家1得分为棋盘下右角的玩家1棋子数，玩家2得分为棋盘上左角的玩家2棋子数
         board = self.game.board.board
-        p1_score = np.count_nonzero(board[13:17,13:17] == 1)
-        p2_score = np.count_nonzero(board[0:4,0:4] == 2)
+        p1_score = np.count_nonzero(board[9:12,9:12] == 1) ############
+        p2_score = np.count_nonzero(board[0:3,0:3] == 2)     ############
         self.score_label.config(text=f"分数 - 玩家1: {p1_score}, 玩家2: {p2_score}")
 
     def update_board(self):
         self.canvas.delete("all")
         board = self.game.board.board
-        for i in range(17):
-            for j in range(17):
+        for i in range(12):
+            for j in range(12):
                 x1 = j * self.cell_size
                 y1 = i * self.cell_size
                 x2 = x1 + self.cell_size
                 y2 = y1 + self.cell_size
                 # 为四个角区域设定特殊背景色
-                if 0 <= i < 4 and 0 <= j < 4:
+                if 0 <= i < 3 and 0 <= j < 3:
                     fill_color = "skyblue"       # 上左角：玩家2目标区域
-                elif 0 <= i < 4 and 13 <= j < 17:
+                elif 0 <= i < 3 and 9 <= j < 12:
                     fill_color = "lightgreen"    # 上右角：中性
-                elif 13 <= i < 17 and 0 <= j < 4:
+                elif 9 <= i < 12 and 0 <= j < 3:
                     fill_color = "khaki"         # 下左角：中性
-                elif 13 <= i < 17 and 13 <= j < 17:
+                elif 9 <= i < 12 and 9 <= j < 12:
                     fill_color = "lightcoral"    # 下右角：玩家1目标区域
                 else:
                     fill_color = "white"
@@ -116,8 +115,8 @@ class GameGUI:
         # 检查是否达到规定时间，若达到则结束游戏并统计分数
         if elapsed >= self.game_duration:
             board = self.game.board.board
-            p1_score = np.count_nonzero(board[13:17,13:17] == 1)
-            p2_score = np.count_nonzero(board[0:4,0:4] == 2)
+            p1_score = np.count_nonzero(board[9:12,9:12] == 1)
+            p2_score = np.count_nonzero(board[0:3,0:3] == 2)
             if p1_score > p2_score:
                 winner = "玩家1"
             elif p2_score > p1_score:
@@ -164,10 +163,9 @@ def start_game(p1_type, p2_type, game_duration, root, selection_frame):
             return MCTSAI(player_id)
         elif ai_type == "Minimax":
             return MinimaxAI(player_id)
-        #elif ai_type == "BFS":
-        #    return BFSAI(player_id)
         else:
             return GreedyAI(player_id)
+        
     p1_ai = create_ai(p1_type, 1)
     p2_ai = create_ai(p2_type, 2)
     selection_frame.destroy()

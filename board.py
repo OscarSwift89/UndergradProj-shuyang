@@ -3,15 +3,15 @@ from colorama import Fore, Back, Style
 
 class Board:
     def __init__(self):
-        # 初始化17x17棋盘
-        self.board = np.zeros((17, 17), dtype=int)
+        # 初始化12x12棋盘
+        self.board = np.zeros((12, 12), dtype=int)
         self.init_pieces()
 
     def init_pieces(self):
         # 玩家1的初始位置（左上角区域）
-        self.board[0:4, 0:4] = 1
+        self.board[0:3, 0:3] = 1
         # 玩家2的初始位置（右下角区域）
-        self.board[-4:, -4:] = 2
+        self.board[-3:, -3:] = 2
 
     def move_piece(self, from_pos, to_pos):
         """移动棋子并返回是否成功"""
@@ -29,7 +29,7 @@ class Board:
         directions = [(-1,0), (1,0), (0,-1), (0,1)]
         for dx, dy in directions:
             nx, ny = x + dx, y + dy
-            if 0 <= nx < 17 and 0 <= ny < 17:
+            if 0 <= nx < 12 and 0 <= ny < 12:
                 if self.board[nx, ny] == 0:
                     moves.append((nx, ny))
         return moves
@@ -44,8 +44,8 @@ class Board:
         for dx, dy in directions:
             midx, midy = x + dx, y + dy
             landingx, landingy = x + 2 * dx , y + 2 * dy
-            if 0 <= midx < 17 and 0 <= midy < 17 and self.board[midx, midy]:
-                if 0 <= landingx < 17 and 0 <= landingy < 17 and self.board[landingx, landingy]:
+            if 0 <= midx < 12 and 0 <= midy < 12 and self.board[midx, midy]:
+                if 0 <= landingx < 12 and 0 <= landingy < 12 and self.board[landingx, landingy]:
                     jumps.append((landingx, landingy))
         return jumps
 
@@ -54,9 +54,9 @@ class Board:
         """胜利条件：当玩家1的所有棋子均移动到右下区域，
            或玩家2的所有棋子均移动到左上区域时，游戏结束。"""
         # 假设每个玩家初始有16个棋子（4x4区域）
-        if np.count_nonzero(self.board[-4:, -4:] == 1) == 16:
+        if np.count_nonzero(self.board[-3:, -3:] == 1) == 9:
             return True
-        if np.count_nonzero(self.board[0:4, 0:4] == 2) == 16:
+        if np.count_nonzero(self.board[0:3, 0:3] == 2) == 9:
             return True
         return False
 
