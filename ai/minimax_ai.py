@@ -1,7 +1,7 @@
 # ai/minimax_ai.py
 import numpy as np
 import random
-from .move_utils import get_valid_moves, get_jump_moves, get_all_moves
+from .move_utils import get_all_moves, free_up_target_entry
 
 class MinimaxAI:
     def __init__(self, player_id, depth=2):
@@ -9,6 +9,13 @@ class MinimaxAI:
         self.depth = depth
 
     def choose_move(self, board):
+
+        #优先尝试腾挪位置
+        move_to_free = free_up_target_entry(board, self.player_id)
+        if move_to_free:
+            return move_to_free
+        
+        #无法腾挪再进行原有逻辑
         moves = get_all_moves(board, self.player_id)
         if not moves:
             return None

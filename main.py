@@ -6,6 +6,7 @@ import psutil
 import os
 import numpy as np
 
+#导入所有ai代理模块
 from game import Game
 from ai.greedy_ai import GreedyAI
 from ai.astar_ai import AStarAI
@@ -176,7 +177,7 @@ root.title("中国跳棋AI对战")
 selection_frame = tk.Frame(root)
 selection_frame.pack(padx=10, pady=10)
 
-options = ["Greedy", "A* 算法", "MCTS", "Minimax", "BFS"]
+options = ["Greedy", "A* 算法", "MCTS", "Minimax"]
 
 tk.Label(selection_frame, text="选择玩家1的AI:").grid(row=0, column=0, padx=5, pady=5)
 tk.Label(selection_frame, text="选择玩家2的AI:").grid(row=1, column=0, padx=5, pady=5)
