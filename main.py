@@ -17,9 +17,16 @@ class GameGUI:
         self.root = root
         self.game_duration = game_duration  # 游戏总时长（秒）
 
+        #定义棋子颜色与目标区域颜色的映射
+        self.piece_colors = {1: "red", 2: "blue", 3: "green", 4: "magenta"}
+        self.target_colors = {1: "lightcoral", 2: "khaki", 3: "lightgreen", 4: "skyblue"}
+
         # 创建 Canvas 绘制棋盘
         self.canvas = tk.Canvas(root, width=600, height=600, bg="white")
         self.canvas.grid(row=0, column=0, padx=10, pady=10)
+
+        #先保存各个agent，方便显示在信息栏
+        self.agents = {1: p1_ai, 2: p2_ai, 3: p3_ai, 4: p4_ai,}
 
         # 信息面板放在右侧，针对4个玩家展示信息
         self.info_frame = tk.Frame(root)
@@ -29,6 +36,8 @@ class GameGUI:
         # 创建游戏实例（修改后的Game支持4玩家）
         self.game = Game(p1_ai, p2_ai, p3_ai, p4_ai)
         self.cell_size = 600 // 12
+
+        
 
         # 记录每个玩家决策的统计信息（此处仅示例，可根据实际扩展）
         self.stats = {i: {'decision_time': 0.0, 'cumulative_time': 0.0, 'decision_count': 0, 'latest_mem': 0} for i in range(1, 5)}
@@ -45,6 +54,18 @@ class GameGUI:
             frame = tk.LabelFrame(self.info_frame, text=f"玩家 {player} 信息", padx=5, pady=5)
             frame.pack(fill="x", pady=5)
             self.info_labels[player] = {}
+
+            #添加算法名称
+            self.info_labels[player]['algorithm'] = tk.Label(frame, text= "算法： " + self.agents[player].__class__.__name__)
+            self.info_labels[player]['algorithm'].pack(anchor= "w")
+            #显示棋子颜色
+            self.info_labels[player]['piece_color'] = tk.Label(frame, text= "棋子颜色： " + self.piece_colors[player])
+            self.info_labels[player]['piece_color'].pack(anchor= "w")
+            #显示目标区域颜色
+            self.info_labels[player]['target_color'] = tk.Label(frame, text= "目标区域颜色： " + self.target_colors[player])
+            self.info_labels[player]['target_color'].pack(anchor= "w")
+
+            #现有显示信息
             self.info_labels[player]['current_time'] = tk.Label(frame, text="当前决策耗时: -")
             self.info_labels[player]['current_time'].pack(anchor="w")
             self.info_labels[player]['cumulative_time'] = tk.Label(frame, text="累计决策耗时: -")
@@ -53,6 +74,7 @@ class GameGUI:
             self.info_labels[player]['decision_count'].pack(anchor="w")
             self.info_labels[player]['latest_mem'] = tk.Label(frame, text="最新决策内存: -")
             self.info_labels[player]['latest_mem'].pack(anchor="w")
+
         # 总内存和游戏运行时间
         self.total_mem_label = tk.Label(self.info_frame, text="总内存消耗: -")
         self.total_mem_label.pack(anchor="w", pady=(10, 0))

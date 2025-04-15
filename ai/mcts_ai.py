@@ -4,6 +4,8 @@ import math
 import numpy as np
 from .move_utils import get_all_moves
 
+
+#需要修改
 class MCTSNode:
     def __init__(self, board_state, player_id, parent=None, move=None):
         self.board_state = board_state.copy()
