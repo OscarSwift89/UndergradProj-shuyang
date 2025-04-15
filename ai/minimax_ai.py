@@ -9,13 +9,10 @@ class MinimaxAI:
         self.depth = depth
 
     def choose_move(self, board):
-
-        #优先尝试腾挪位置
         move_to_free = free_up_target_entry(board, self.player_id)
         if move_to_free:
             return move_to_free
         
-        #无法腾挪再进行原有逻辑
         moves = get_all_moves(board, self.player_id)
         if not moves:
             return None
@@ -45,7 +42,8 @@ class MinimaxAI:
         return value
 
     def min_value(self, board, depth, alpha, beta):
-        opp = 2 if self.player_id == 1 else 1
+        # 为简化起见，固定选择一个对手（例如：如果自己不是 1 则对手用 1，否则用 2）
+        opp = 1 if self.player_id != 1 else 2
         if depth == 0 or self.terminal(board):
             return self.evaluate(board)
         value = float('inf')
@@ -68,21 +66,21 @@ class MinimaxAI:
         return new_board
 
     def evaluate(self, board):
-        # 简单使用所有棋子到目标区域的曼哈顿距离之和来作为评估
         if self.player_id == 1:
             my_target = (11, 11)
-            opp_target = (0, 0)
-        else:
+        elif self.player_id == 2:
+            my_target = (11, 0)
+        elif self.player_id == 3:
+            my_target = (0, 11)
+        elif self.player_id == 4:
             my_target = (0, 0)
-            opp_target = (11, 11)
         my_pieces = np.argwhere(board == self.player_id)
-        opp_pieces = np.argwhere(board == (2 if self.player_id == 1 else 1))
         my_distance = sum([abs(p[0] - my_target[0]) + abs(p[1] - my_target[1]) for p in my_pieces])
-        opp_distance = sum([abs(p[0] - opp_target[0]) + abs(p[1] - opp_target[1]) for p in opp_pieces])
-        return opp_distance - my_distance
+        return -my_distance
 
     def terminal(self, board):
-        if self.player_id == 1:
-            return np.count_nonzero(board[-3:, -3:] == 1) == 9 or np.count_nonzero(board[0:3, 0:3] == 2) == 9
-        else:
-            return np.count_nonzero(board[0:3, 0:3] == 2) == 9 or np.count_nonzero(board[-3:, -3:] == 1) == 9
+        p1_done = np.count_nonzero(board[9:12, 9:12] == 1) == 9
+        p2_done = np.count_nonzero(board[9:12, 0:3] == 2) == 9
+        p3_done = np.count_nonzero(board[0:3, 9:12] == 3) == 9
+        p4_done = np.count_nonzero(board[0:3, 0:3] == 4) == 9
+        return p1_done or p2_done or p3_done or p4_done

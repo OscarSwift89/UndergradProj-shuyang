@@ -81,50 +81,80 @@ def get_continuous_jump_moves(pos, board, visited=None, max_depth=3):
                         # 拼接路径：fp[0]通常为target，因此只添加 fp[1:]
                         paths.append([pos] + fp[1:])
             L += 2
+    print(paths)
     return paths
      
     
 
 def free_up_target_entry(board, player_id):
     """
-    当目标区域被几乎填满时，导致剩余一两个棋子无法移动进入目标区域，
-    尝试在目标区域腾出外部位置，使得外面棋子可以移动进入
+    根据 4 人对战的新目标区域设置，为堵塞情况寻找腾挪走法：
+      - 玩家1目标：右下区域 (行号 ≥ 9 且列号 ≥ 9)，边缘条件：row==9或col==9
+      - 玩家2目标：左下区域 (行号 ≥ 9 且列号 < 3)，边缘条件：col==2
+      - 玩家3目标：右上区域 (行号 < 3 且列号 ≥ 9)，边缘条件：row==2
+      - 玩家4目标：左上区域 (行号 < 3 且列号 < 3)，边缘条件：row==2 或 col==2
     """
-    # 玩家1情况
-    if player_id == 1: 
+    if player_id == 1:
         for row in range(9, 12):
             for col in range(9, 12):
                 if board[row, col] == 1:
-                    # 如果当前棋子刚好在目标入口边界（行跟列刚好是9）
                     if row == 9 or col == 9:
                         candidates = []
-                        # 尝试向内部移动
-                        if row + 1 < 12 and board[row + 1, col] == 0:
-                            candidates.append((row + 1, col))
-                        if col + 1 < 12 and board[row, col + 1] == 0:
-                            candidates.append((row, col + 1))
-                        if row + 1 < 12 and col + 1 < 12 and board[row + 1, col + 1] == 0:
-                            candidates.append((row + 1, col + 1))
+                        if row + 1 < 12 and board[row+1, col] == 0:
+                            candidates.append((row+1, col))
+                        if col + 1 < 12 and board[row, col+1] == 0:
+                            candidates.append((row, col+1))
+                        if row + 1 < 12 and col + 1 < 12 and board[row+1, col+1] == 0:
+                            candidates.append((row+1, col+1))
                         if candidates:
-                            # 返回深层目标（区域内）最近的候选位置
-                            best_candidate = min(candidates, key=lambda pos: abs(pos[0] - 11) + abs(pos[1] - 11))
+                            best_candidate = min(candidates, key=lambda pos: abs(pos[0]-11) + abs(pos[1]-11))
                             return ((row, col), best_candidate)
         return None
-    else:
-        # 玩家2情况
-        for row in range(0, 3):
+    elif player_id == 2:
+        for row in range(9, 12):
             for col in range(0, 3):
                 if board[row, col] == 2:
-                    if row == 2 or col == 2:
+                    if col == 2:
                         candidates = []
-                        if row - 1 >= 0 and board[row - 1, col] == 0:
-                            candidates.append((row - 1, col))
-                        if col - 1 >= 0 and board[row, col - 1] == 0:
-                            candidates.append((row, col - 1))
-                        if row - 1 >= 0 and col - 1 >= 0 and board[row - 1, col - 1] == 0:
-                            candidates.append((row - 1, col - 1))
+                        if col - 1 >= 0 and board[row, col-1] == 0:
+                            candidates.append((row, col-1))
+                        if row + 1 < 12 and board[row+1, col] == 0:
+                            candidates.append((row+1, col))
+                        if row + 1 < 12 and col - 1 >= 0 and board[row+1, col-1] == 0:
+                            candidates.append((row+1, col-1))
                         if candidates:
-                            best_candidate = min(candidates, key=lambda pos: abs(pos[0] - 0) + abs(pos[1] - 0))
+                            best_candidate = min(candidates, key=lambda pos: abs(pos[0]-11) + abs(pos[1]-0))
                             return ((row, col), best_candidate)
         return None
-    #可以再添加其他玩家棋子的判断逻辑                
+    elif player_id == 3:
+        for row in range(0, 3):
+            for col in range(9, 12):
+                if board[row, col] == 3:
+                    if row == 2:
+                        candidates = []
+                        if row - 1 >= 0 and board[row-1, col] == 0:
+                            candidates.append((row-1, col))
+                        if col + 1 < 12 and board[row, col+1] == 0:
+                            candidates.append((row, col+1))
+                        if row - 1 >= 0 and col + 1 < 12 and board[row-1, col+1] == 0:
+                            candidates.append((row-1, col+1))
+                        if candidates:
+                            best_candidate = min(candidates, key=lambda pos: abs(pos[0]-0) + abs(pos[1]-11))
+                            return ((row, col), best_candidate)
+        return None
+    elif player_id == 4:
+        for row in range(0, 3):
+            for col in range(0, 3):
+                if board[row, col] == 4:
+                    if row == 2 or col == 2:
+                        candidates = []
+                        if row - 1 >= 0 and board[row-1, col] == 0:
+                            candidates.append((row-1, col))
+                        if col - 1 >= 0 and board[row, col-1] == 0:
+                            candidates.append((row, col-1))
+                        if row - 1 >= 0 and col - 1 >= 0 and board[row-1, col-1] == 0:
+                            candidates.append((row-1, col-1))
+                        if candidates:
+                            best_candidate = min(candidates, key=lambda pos: abs(pos[0]-0) + abs(pos[1]-0))
+                            return ((row, col), best_candidate)
+        return None

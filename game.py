@@ -2,9 +2,9 @@ import time
 from board import Board
 
 class Game:
-    def __init__(self, player1_ai, player2_ai):
+    def __init__(self, player1_ai, player2_ai, player3_ai, player4_ai):
         self.board = Board()
-        self.players = {1: player1_ai, 2: player2_ai}
+        self.players = {1: player1_ai, 2: player2_ai, 3: player3_ai, 4: player4_ai}
         self.current_player = 1
         
     def run(self):

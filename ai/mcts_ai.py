@@ -4,19 +4,15 @@ import math
 import numpy as np
 from .move_utils import get_all_moves
 
-"""改进后的 MCTS 算法：
-   新的随机模拟阶段（simulate）不再简单随机返回，而是进行有限步随机走子后，
-   根据局面评估函数返回胜负判定，从而更好地引导搜索。
-"""
 class MCTSNode:
     def __init__(self, board_state, player_id, parent=None, move=None):
         self.board_state = board_state.copy()
         self.parent = parent
-        self.move = move  # (from_pos, to_pos) 使该节点产生的移动
+        self.move = move  # 该节点产生的移动
         self.children = []
         self.wins = 0
         self.visits = 0
-        self.untried_moves = []  # 初始化为空列表
+        self.untried_moves = []
         self.player_id = player_id
 
 class MCTSAI:
@@ -25,11 +21,10 @@ class MCTSAI:
         self.iterations = iterations
         
     def choose_move(self, board):
-        # 创建根节点，并初始化所有合法移动
         root = MCTSNode(board, self.player_id)
         root.untried_moves = get_all_moves(board, self.player_id)
         if not root.untried_moves:
-            return None  # 无合法移动
+            return None
         
         for _ in range(self.iterations):
             node = self.select(root)
@@ -50,7 +45,7 @@ class MCTSAI:
     
     def best_child(self, node):
         C = 1.4
-        return max(node.children, key=lambda c: c.wins / c.visits + C * math.sqrt(math.log(node.visits) / c.visits))
+        return max(node.children, key=lambda c: (c.wins / c.visits) + C * math.sqrt(math.log(node.visits) / c.visits))
     
     def expand(self, node):
         move = node.untried_moves.pop()
@@ -65,10 +60,6 @@ class MCTSAI:
         return child_node
     
     def simulate(self, node):
-        """
-        新的随机模拟：从 node.board_state 出发，双方交替进行随机走子，
-        进行固定步数（例如 10 步）或提前终止后，根据局面评估函数返回胜利方。
-        """
         board = node.board_state.copy()
         current_player = self.player_id
         depth_limit = 10
@@ -78,41 +69,28 @@ class MCTSAI:
                 break
             move = random.choice(moves)
             from_pos, to_pos = move
-            # 执行移动
             board[to_pos] = board[from_pos]
             board[from_pos] = 0
-            # 交替走子
-            current_player = 2 if current_player == 1 else 1
-        
-        # 评估局面：利用己方与对手棋子距离各自目标区域的曼哈顿距离差值
-        eval_val = self.evaluate(board)
-        # 如果 eval_val > 0，认为局面对 self.player_id 有利，返回 self.player_id；否则返回对手编号
-        return self.player_id if eval_val > 0 else (2 if self.player_id == 1 else 1)
+            current_player = (current_player % 4) + 1  # 轮换4个玩家
+        return self.evaluate(board)
     
     def backpropagate(self, node, result):
         while node is not None:
             node.visits += 1
-            if result == self.player_id:
+            # 简单的：result > 0 则认为有利于 self.player_id
+            if result > 0:
                 node.wins += 1
             node = node.parent
 
     def evaluate(self, board):
-        """
-        局面评估函数：
-         - 对于玩家1，目标为棋盘右下角 (11, 11)；对于玩家2，目标为 (0, 0)。
-         - 计算所有己方棋子到目标的曼哈顿距离总和，以及对手棋子的总和，
-           返回 (对手距离和 - 己方距离和) 。
-         数值越大表示己方优势越明显。
-        """
         if self.player_id == 1:
             my_target = (11, 11)
-            opp_target = (0, 0)
-        else:
+        elif self.player_id == 2:
+            my_target = (11, 0)
+        elif self.player_id == 3:
+            my_target = (0, 11)
+        elif self.player_id == 4:
             my_target = (0, 0)
-            opp_target = (11, 11)
         my_positions = np.argwhere(board == self.player_id)
-        opp_positions = np.argwhere(board == (2 if self.player_id == 1 else 1))
         my_distance = sum([abs(pos[0] - my_target[0]) + abs(pos[1] - my_target[1]) for pos in my_positions])
-        opp_distance = sum([abs(pos[0] - opp_target[0]) + abs(pos[1] - opp_target[1]) for pos in opp_positions])
-        return opp_distance - my_distance
-
+        return -my_distance
