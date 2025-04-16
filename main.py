@@ -11,6 +11,7 @@ from ai.greedy_ai import GreedyAI
 from ai.astar_ai import AStarAI
 from ai.mcts_ai import MCTSAI
 from ai.minimax_ai import MinimaxAI
+from ai.bfs_ai import BFSAgent
 
 class GameGUI:
     def __init__(self, root, p1_ai, p2_ai, p3_ai, p4_ai, game_duration):
@@ -193,8 +194,11 @@ def start_game(p1_type, p2_type, p3_type, p4_type, game_duration, root, selectio
             return MCTSAI(player_id)
         elif ai_type == "Minimax":
             return MinimaxAI(player_id)
+        if ai_type == "BFS":
+            return BFSAgent(player_id)
         else:
             return GreedyAI(player_id)
+        
     p1_ai = create_ai(p1_type, 1)
     p2_ai = create_ai(p2_type, 2)
     p3_ai = create_ai(p3_type, 3)
@@ -207,7 +211,7 @@ root.title("ChineseChecker - AI.ver")
 selection_frame = tk.Frame(root)
 selection_frame.pack(padx=10, pady=10)
 
-options = ["Greedy", "AStar", "MCTS", "Minimax"]
+options = ["Greedy", "AStar", "MCTS", "Minimax", "BFS"]
 
 tk.Label(selection_frame, text="选择玩家1的AI:").grid(row=0, column=0, padx=5, pady=5)
 tk.Label(selection_frame, text="选择玩家2的AI:").grid(row=1, column=0, padx=5, pady=5)
