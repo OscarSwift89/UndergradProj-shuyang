@@ -88,11 +88,18 @@ def get_continuous_jump_moves(pos, board, visited=None, max_depth=3):
 
 def free_up_target_entry(board, player_id):
     """
-    根据 4 人对战的新目标区域设置，为堵塞情况寻找腾挪走法：
-      - 玩家1目标：右下区域 (行号 ≥ 9 且列号 ≥ 9)，边缘条件：row==9或col==9
-      - 玩家2目标：左下区域 (行号 ≥ 9 且列号 < 3)，边缘条件：col==2
-      - 玩家3目标：右上区域 (行号 < 3 且列号 ≥ 9)，边缘条件：row==2
-      - 玩家4目标：左上区域 (行号 < 3 且列号 < 3)，边缘条件：row==2 或 col==2
+    当目标区域几乎填满，导致最后一个棋子无法进入时，
+    尝试腾出目标入口位置，方法是将目标区域内处于入口边界的棋子向内部移动。
+    
+    四个玩家的目标区域和入口条件：
+    - 玩家 1（目标：右下区域，即 row >= 9 且 col >= 9）：若棋子处于 row==9 或 col==9，
+      尝试移动到 (row+1, col)、(row, col+1) 或 (row+1, col+1) 中空的单元。
+    - 玩家 2（目标：左下区域，即 row >= 9 且 col < 3）：若棋子处于 row==9 或 col==2，
+      尝试移动到 (row+1, col)、(row, col-1) 或 (row+1, col-1) 中空的单元。
+    - 玩家 3（目标：右上区域，即 row < 3 且 col >= 9）：若棋子处于 row==2 或 col==9，
+      尝试移动到 (row-1, col)、(row, col+1) 或 (row-1, col+1) 中空的单元。
+    - 玩家 4（目标：左上区域，即 row < 3 且 col < 3）：若棋子处于 row==2 或 col==2，
+      尝试移动到 (row-1, col)、(row, col-1) 或 (row-1, col-1) 中空的单元。
     """
     if player_id == 1:
         for row in range(9, 12):
@@ -114,12 +121,12 @@ def free_up_target_entry(board, player_id):
         for row in range(9, 12):
             for col in range(0, 3):
                 if board[row, col] == 2:
-                    if col == 2:
+                    if row == 9 or col == 2:
                         candidates = []
-                        if col - 1 >= 0 and board[row, col-1] == 0:
-                            candidates.append((row, col-1))
                         if row + 1 < 12 and board[row+1, col] == 0:
                             candidates.append((row+1, col))
+                        if col - 1 >= 0 and board[row, col-1] == 0:
+                            candidates.append((row, col-1))
                         if row + 1 < 12 and col - 1 >= 0 and board[row+1, col-1] == 0:
                             candidates.append((row+1, col-1))
                         if candidates:
@@ -130,7 +137,7 @@ def free_up_target_entry(board, player_id):
         for row in range(0, 3):
             for col in range(9, 12):
                 if board[row, col] == 3:
-                    if row == 2:
+                    if row == 2 or col == 9:
                         candidates = []
                         if row - 1 >= 0 and board[row-1, col] == 0:
                             candidates.append((row-1, col))
